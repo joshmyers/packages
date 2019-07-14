@@ -1,0 +1,117 @@
+name: Packages 
+
+description: |-
+  getFT distribution of packages.
+
+introduction: |-
+
+  Use this repo to easily install releases of popular Open Source packages. We provide a few ways to use it.
+  
+  1. **Make Based Installer.** This installer works regardless of your OS and distribution. It downloads packages directly from their GitHub source repos and installs them to your `INSTALL_PATH`. 
+  2. **Docker Image.** Use this docker image as a base-image or as part of a multi-stage docker build. The docker image always distributes the latest linux binaries for `x86_64` architectures.
+
+  See examples below for usage.
+
+# License of this project
+license: "APACHE2"
+
+# Canonical GitHub repo 
+github_repo: getft/packages
+
+# Badges to display
+#badges:
+#  - name: "TravisCI Build Status"
+#    image: "https://travis-ci.org/getft/packages.svg?branch=master"
+#    url: "https://travis-ci.org/getft/packages"
+
+# Other files to include in this README from the project folder
+include:
+  - "docs/targets.md"
+
+usage: |-
+
+  ### Makefile Interface
+  
+  The `Makefile` interface works on OSX and Linux. It's a great way to distribute binaries in an OS-agnostic way which does not depend on a package manager (e.g. no `brew` or `apt-get`). 
+  
+  This method is ideal where you need the dependencies installed natively for your OS/architecture, such as installing a package on OSX.
+
+  See all available packages:
+  ```
+  make -C install help
+  ```
+
+  Install everything...
+  ```
+  make -C install all
+  ```
+
+  Install specific packages:
+  ```
+  make -C install aws-vault chamber
+  ```
+
+  Install to a specific folder:
+  ```
+  make -C install aws-vault INSTALL_PATH=/usr/bin
+  ```
+
+  Uninstall a specific package
+  ```
+  make -C uninstall yq
+  ```
+
+examples: |-
+  ### Docker Multi-stage Build
+
+  Add this to a `Dockerfile` to install packages using a multi-stage build process:
+  ```
+  FROM getft/packages:latest AS packages
+
+  COPY --from=packages /packages/bin/chamber /usr/local/bin/
+  ```
+
+  ### Docker with Git Clone
+  
+  Or... add this to a `Dockerfile` to easily install packages on-demand:
+  ```
+  RUN git clone --depth=1 -b master https://github.com/getft/packages.git /packages && \
+      rm -rf /packages/.git && \
+      make -C /packages/install chamber
+  ```
+
+  ### Makefile Inclusion
+
+  Sometimes it's necessary to install some binary dependencies when building projects. For example, we frequently 
+  rely on `gomplate` or `helm` to build chart packages.
+
+  Here's a stub you can include into a `Makefile` to make it easier to install binary dependencies.
+
+  ```
+  export PACKAGES_VERSION ?= master
+  export PACKAGES_PATH ?= packages/
+  export INSTALL_PATH ?= $(PACKAGES_PATH)/vendor
+
+  ## Install packages
+  packages/install:
+          @if [ ! -d $(PACKAGES_PATH) ]; then \
+            echo "Installing packages $(PACKAGES_VERSION)..."; \
+            rm -rf $(PACKAGES_PATH); \
+            git clone --depth=1 -b $(PACKAGES_VERSION) https://github.com/getft/packages.git $(PACKAGES_PATH); \
+            rm -rf $(PACKAGES_PATH)/.git; \
+          fi
+
+  ## Install package (e.g. gomplate, aws-cli)
+  packages/install/%: packages/install
+          @make -C $(PACKAGES_PATH)/install $(subst packages/install/,,$@)
+
+  ## Uninstall package (e.g. gomplate, aws-cli)
+  packages/uninstall/%:
+          @make -C $(PACKAGES_PATH)/uninstall $(subst packages/uninstall/,,$@)
+  ```
+
+
+# Contributors to this project
+contributors:
+  - name: "Josh Myers"
+    github: "joshmyers"

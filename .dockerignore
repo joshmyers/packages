@@ -1,0 +1,13 @@
+.git
+.gitignore
+.editorconfig
+**/.terraform
+*.tfstate
+*.tfstate.*
+.idea
+*.iml
+.build-harness
+build-harness
+# We are relying on tmp and must include it
+tmp/**
+artifacts/**
